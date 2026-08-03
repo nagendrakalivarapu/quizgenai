@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const api = axios.create({
-    baseURL: "https://institute-workshops-beaver-soldiers.trycloudflare.com/api",
+    baseURL: "http://localhost:8080/api",
     headers: {
         "Content-Type": "application/json"
     }
