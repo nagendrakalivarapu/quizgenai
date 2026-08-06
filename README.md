@@ -1,3 +1,4 @@
+Deployed Link: https://quizgenai-eta.vercel.app
 # QuizGenAI
 
 QuizGenAI is a full-stack web application that generates custom quizzes on any topic using Google's Gemini AI. Users can register, log in with JWT-secured authentication, generate AI-powered quizzes on demand, submit their answers, and track their performance history over time.
