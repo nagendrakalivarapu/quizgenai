@@ -68,14 +68,26 @@ public class ResultServiceImpl implements ResultService {
         resultRepository.save(result);
 
         // Send result to registered email
-        emailService.sendQuizResult(
-                user.getEmail(),
-                user.getName(),
-                request.getTopic(),
-                request.getDifficulty(),
-                score,
-                questions.size()
-        );
+//        emailService.sendQuizResult(
+//                user.getEmail(),
+//                user.getName(),
+//                request.getTopic(),
+//                request.getDifficulty(),
+//                score,
+//                questions.size()
+//        );
+        try {
+            emailService.sendQuizResult(
+                    user.getEmail(),
+                    user.getName(),
+                    request.getTopic(),
+                    request.getDifficulty(),
+                    score,
+                    questions.size()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         return new ResultResponse(score, questions.size());
     }
