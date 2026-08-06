@@ -119,4 +119,4 @@ quizgenai/
 
 ## License
 
-This project is available for personal and educational use. Add a license of your choice (e.g. MIT) if you plan to open-source it.
+This project is available for personal and educational use only.
