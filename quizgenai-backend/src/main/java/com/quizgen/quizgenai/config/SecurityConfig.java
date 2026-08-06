@@ -45,7 +45,8 @@ public class SecurityConfig {
 
         configuration.setAllowedOriginPatterns(List.of(
                 "http://localhost:5173",
-                "https://*.trycloudflare.com"
+                "https://*.trycloudflare.com",
+                "https://*.vercel.app"
         ));
 
         configuration.setAllowedMethods(List.of(
