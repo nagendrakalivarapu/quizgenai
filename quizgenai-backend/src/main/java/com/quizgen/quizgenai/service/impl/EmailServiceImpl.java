@@ -1,116 +1,84 @@
-//package com.quizgen.quizgenai.service.impl;
-//
-//import com.quizgen.quizgenai.service.EmailService;
-//import org.springframework.mail.SimpleMailMessage;
-//import org.springframework.mail.javamail.JavaMailSender;
-//import org.springframework.stereotype.Service;
-//
-//@Service
-//public class EmailServiceImpl implements EmailService {
-//
-//    private final JavaMailSender mailSender;
-//
-//    public EmailServiceImpl(JavaMailSender mailSender) {
-//        this.mailSender = mailSender;
-//    }
-//
-//    @Override
-//    public void sendQuizResult(String to,
-//                               String name,
-//                               String topic,
-//                               String difficulty,
-//                               int score,
-//                               int totalQuestions) {
-//
-//        double percentage = (double) score / totalQuestions * 100;
-//
-//        String body = """
-//                Hello %s,
-//
-//                Congratulations on completing your AI Quiz!
-//
-//                ----------------------------------------
-//                Quiz Details
-//                ----------------------------------------
-//
-//                Name       : %s
-//                Topic      : %s
-//                Difficulty : %s
-//
-//                Score      : %d / %d
-//                Percentage : %.2f%%
-//
-//                Keep learning and keep improving!
-//
-//                Regards,
-//                QuizGen AI Team
-//                """
-//                .formatted(
-//                        name,
-//                        name,
-//                        topic,
-//                        difficulty,
-//                        score,
-//                        totalQuestions,
-//                        percentage
-//                );
-//
-//        SimpleMailMessage message = new SimpleMailMessage();
-//        message.setTo(to);
-//        message.setSubject("QuizGen AI - Your Quiz Result");
-//        message.setText(body);
-//
-//        mailSender.send(message);
-//    }
-//}
-//------------------------------------------------------------------------------------
 package com.quizgen.quizgenai.service.impl;
 
+import com.quizgen.quizgenai.dto.EmailRequest;
+import com.quizgen.quizgenai.dto.EmailResponse;
 import com.quizgen.quizgenai.service.EmailService;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+
+import java.util.List;
 
 @Service
 public class EmailServiceImpl implements EmailService {
 
-    private final JavaMailSender mailSender;
+    private static final Logger log =
+            LoggerFactory.getLogger(EmailServiceImpl.class);
 
-    public EmailServiceImpl(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
+    private final RestClient client;
+
+    @Value("${resend.api.key}")
+    private String apiKey;
+
+    @Value("${resend.from}")
+    private String from;
+
+    public EmailServiceImpl(RestClient client) {
+        this.client = client;
     }
 
+    @Async
     @Override
-    public void sendQuizResult(String to,
-                               String name,
-                               String topic,
-                               String difficulty,
-                               int score,
-                               int totalQuestions) {
+    public void sendQuizResult(
+            String to,
+            String name,
+            String topic,
+            String difficulty,
+            int score,
+            int totalQuestions) {
 
         double percentage = (double) score / totalQuestions * 100;
-        String feedback = getFeedback(percentage);
 
-        String body = """
-                Hi %s,
+        String html = """
+                <div style="font-family:Arial,sans-serif">
 
-                Here's how you did on your recent AI Quiz!
+                <h2>🎉 Quiz Result</h2>
 
-                ------------------------------------------
-                Quiz Summary
-                ------------------------------------------
-                Topic       : %s
-                Difficulty  : %s
-                Score       : %d / %d
-                Percentage  : %.2f%%
-                ------------------------------------------
+                <p>Hello <b>%s</b>,</p>
 
-                %s
+                <p>Your quiz has been evaluated successfully.</p>
 
-                Thanks for using QuizGen AI — keep learning!
+                <table border="1" cellpadding="10" cellspacing="0">
+                    <tr>
+                        <td><b>Topic</b></td>
+                        <td>%s</td>
+                    </tr>
 
-                Best regards,
-                The QuizGen AI Team
+                    <tr>
+                        <td><b>Difficulty</b></td>
+                        <td>%s</td>
+                    </tr>
+
+                    <tr>
+                        <td><b>Score</b></td>
+                        <td>%d / %d</td>
+                    </tr>
+
+                    <tr>
+                        <td><b>Percentage</b></td>
+                        <td>%.2f%%</td>
+                    </tr>
+
+                </table>
+
+                <br>
+
+                <p>Keep learning with QuizGen AI 🚀</p>
+
+                </div>
                 """
                 .formatted(
                         name,
@@ -118,22 +86,34 @@ public class EmailServiceImpl implements EmailService {
                         difficulty,
                         score,
                         totalQuestions,
-                        percentage,
-                        feedback
+                        percentage
                 );
 
-        SimpleMailMessage message = new SimpleMailMessage();
-        message.setTo(to);
-        message.setSubject("Your Quiz Result – " + topic + " (" + String.format("%.0f", percentage) + "%)");
-        message.setText(body);
+        EmailRequest request = new EmailRequest(
+                from,
+                List.of(to),
+                "Quiz Result",
+                html
+        );
 
-        mailSender.send(message);
+        try {
+
+            EmailResponse response = client.post()
+                    .uri("https://api.resend.com/emails")
+                    .header("Authorization", "Bearer " + apiKey)
+                    .header("Content-Type", "application/json")
+                    .body(request)
+                    .retrieve()
+                    .body(EmailResponse.class);
+
+            log.info("Email sent: {}", response.getId());
+
+        } catch (Exception e) {
+
+            log.error("Email failed", e);
+
+        }
+
     }
 
-    private String getFeedback(double percentage) {
-        if (percentage >= 90) return "Outstanding work! You've truly mastered this topic.";
-        if (percentage >= 75) return "Great job! You have a strong grasp of the material.";
-        if (percentage >= 50) return "Good effort! A bit more practice and you'll ace it next time.";
-        return "Don't worry — every attempt is a step forward. Keep practicing!";
-    }
 }
